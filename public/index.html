@@ -2,65 +2,142 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script defer src="script.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chat App</title>
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       padding: 0;
-      font-family: 'Segoe UI', sans-serif;
       background: #f0f2f5;
+      font-family: 'Segoe UI', sans-serif;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
     }
+
     .container {
+      background-color: #fff;
       width: 100%;
       max-width: 500px;
       height: 90vh;
-      background: #fff;
-      border-radius: 20px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
       display: flex;
       flex-direction: column;
+      border-radius: 20px;
       overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     }
-    .chat-header {
-      background: #4f46e5;
+
+    .header {
+      background-color: #4f46e5;
       color: white;
       padding: 1rem;
       text-align: center;
-      font-size: 1.3rem;
       font-weight: bold;
+      font-size: 1.3rem;
+      flex-shrink: 0;
     }
-    #chat {
+
+    /* Login section */
+    #login-section {
       flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
       padding: 1rem;
-      overflow-y: auto;
+    }
+
+    #login-section input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      border-radius: 999px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    #login-section button {
+      width: 48%;
+      padding: 0.75rem 0;
+      background-color: #4f46e5;
+      color: white;
+      border: none;
+      border-radius: 999px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-right: 4%;
+    }
+
+    #login-section button:last-child {
+      margin-right: 0;
+      background-color: #10b981;
+    }
+
+    #login-section button:hover {
+      opacity: 0.9;
+    }
+
+    #login-message {
+      color: red;
+      min-height: 1.5rem;
+      text-align: center;
+      margin-top: 0.5rem;
+      font-weight: 600;
+    }
+
+    /* Chat section */
+    #chat-section {
+      flex: 0.9;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    #chat {
+      flex: 0.9; /* fill all vertical space above input */
+      padding: 1rem;
+      overflow-y: auto; /* scroll bar only on chat messages */
       display: flex;
       flex-direction: column;
       gap: 10px;
-      background: #f9fafb;
+      background-color: #ffffff;
     }
+
     .message {
       max-width: 80%;
       padding: 10px 15px;
       border-radius: 18px;
       font-size: 1rem;
       line-height: 1.4;
+      animation: fadeIn 0.3s ease-in-out;
       word-wrap: break-word;
       white-space: pre-wrap;
     }
-    .message.user { background: #dbeafe; align-self: flex-end; }
-    .message.other { background: #e5e7eb; align-self: flex-start; }
+
+    .message.user {
+      background-color: #dbeafe;
+      align-self: flex-end;
+    }
+
+    .message.other {
+      background-color: #e5e7eb;
+      align-self: flex-start;
+    }
+
     .chat-input {
       display: flex;
       padding: 1rem;
       border-top: 1px solid #ddd;
-      background: #fff;
+      background-color: #fff;
+      flex-shrink: 0; /* don't shrink */
     }
+
     .chat-input input {
       flex: 1;
       padding: 0.75rem 1rem;
@@ -69,69 +146,59 @@
       font-size: 1rem;
       outline: none;
     }
+
     .chat-input button {
       margin-left: 10px;
       padding: 0 1.4rem;
-      background: #4f46e5;
+      background-color: #4f46e5;
       color: white;
       border: none;
       border-radius: 999px;
       font-size: 1rem;
       cursor: pointer;
+      transition: background 0.2s;
     }
-    .chat-input button:hover { background: #4338ca; }
-    #login-section {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      gap: 10px;
-      padding: 20px;
+
+    .chat-input button:hover {
+      background-color: #4338ca;
     }
-    #login-section input {
-      width: 100%;
-      padding: 0.75rem;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      font-size: 1rem;
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
-    #login-section button {
-      width: 100%;
-      padding: 0.75rem;
-      border: none;
-      border-radius: 5px;
-      font-size: 1rem;
-      cursor: pointer;
-      background: #4f46e5;
-      color: white;
+
+    @media (max-width: 600px) {
+      .container {
+        height: 100vh;
+        border-radius: 0;
+      }
     }
-    #login-section button:hover { background: #4338ca; }
-    #login-message { min-height: 20px; font-size: 0.9rem; }
-    #chat-section { display: none; flex: 1; flex-direction: column; }
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- Login Section -->
-    <div id="login-section">
-      <h2>Login oder Registrieren</h2>
-      <input type="text" id="username" placeholder="Benutzername" />
-      <input type="password" id="password" placeholder="Passwort" />
-      <button onclick="login()">Login</button>
-      <button onclick="register()">Registrieren</button>
-      <div id="login-message"></div>
-    </div>
+    <div class="header">👑WChat👑</div>
 
-    <!-- Chat Section -->
-    <div id="chat-section">
-      <div class="chat-header">💬 Live Chat</div>
+    <section id="login-section">
+      <input id="username" placeholder="Benutzername" autocomplete="off" />
+      <input id="password" type="password" placeholder="Passwort" autocomplete="off" />
+      <div style="display: flex; justify-content: space-between;">
+        <button onclick="register()">Registrieren</button>
+        <button onclick="login()">Login</button>
+      </div>
+      <div id="login-message"></div>
+    </section>
+
+    <section id="chat-section">
       <div id="chat"></div>
       <div class="chat-input">
         <input id="input" placeholder="Nachricht eingeben..." autocomplete="off" />
         <button onclick="send()">Senden</button>
       </div>
-    </div>
+    </section>
   </div>
+
+  <script src="script.js"></script>
 </body>
 </html>

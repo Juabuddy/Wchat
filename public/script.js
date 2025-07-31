@@ -8,16 +8,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const chatSection = document.getElementById('chat-section');
   const loginMessage = document.getElementById('login-message');
 
-  // Add message to chat with auto scroll
-  function addMessage(text, isUser) {
-    const msg = document.createElement('div');
-    msg.className = 'message ' + (isUser ? 'user' : 'other');
-    msg.textContent = text;
-    chat.appendChild(msg);
-
-    // Smooth scroll to bottom
-    chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
-  }
+ function addMessage(text, isUser) {
+  const msg = document.createElement('div');
+  msg.className = 'message ' + (isUser ? 'user' : 'other');
+  msg.textContent = text;
+  chat.appendChild(msg);
+  // ❌ No auto-scrolling
+}
 
   function send() {
     const text = input.value.trim();
@@ -48,8 +45,11 @@ document.addEventListener('DOMContentLoaded', () => {
     ws.onopen = () => addMessage('Verbunden mit dem Chat-Server', false);
 
     ws.onmessage = (event) => {
-      // Server never sends back your own messages, so all here are other users or server
-      addMessage(event.data, false);
+      // Don't show your own message again (filter by username prefix)
+      // Server already doesn't broadcast your own message, but just in case:
+      if (!event.data.startsWith(`Du:`)) {
+        addMessage(event.data, false);
+      }
     };
 
     ws.onclose = () => addMessage('Verbindung zum Chat-Server getrennt', false);
@@ -60,7 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Register user
   window.register = () => {
     clearMessage();
     const username = document.getElementById('username').value.trim();
@@ -84,7 +83,6 @@ document.addEventListener('DOMContentLoaded', () => {
       .catch((err) => showMessage(err.message));
   };
 
-  // Login user
   window.login = () => {
     clearMessage();
     const username = document.getElementById('username').value.trim();
