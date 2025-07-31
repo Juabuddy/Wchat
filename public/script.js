@@ -108,4 +108,17 @@ document.addEventListener('DOMContentLoaded', () => {
       })
       .catch((err) => showMessage(err.message));
   };
+    window.logout = () => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.close();
+    }
+
+    token = null;
+    input.value = '';
+    chat.innerHTML = '';
+
+    chatSection.style.display = 'none';
+    loginSection.style.display = 'flex';
+  };
+
 });

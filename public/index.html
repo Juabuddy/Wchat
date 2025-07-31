@@ -192,11 +192,12 @@
       <div id="login-message"></div>
     </section>
 
-    <section id="chat-section"  style="display:none">
+    <section id="chat-section" style="display:none">
+      <button id="logout-button" onclick="logout()" style="align-self: flex-end; margin: 1rem; padding: 0.5rem 1rem; background-color: #ef4444; color: white; border: none; border-radius: 999px; font-size: 1rem; cursor: pointer;">Logout</button>
       <div id="chat"></div>
       <div class="chat-input">
-        <input id="input" placeholder="Nachricht eingeben..." autocomplete="off" />
-        <button onclick="send()">Senden</button>
+      <input id="input" placeholder="Nachricht eingeben..." autocomplete="off" />
+      <button onclick="send()">Senden</button>
       </div>
     </section>
   </div>
