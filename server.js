@@ -1,113 +1,89 @@
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const WebSocket = require('ws');
 const http = require('http');
-const fs = require('fs');
 const path = require('path');
 
-const clients = [];
+const SECRET_KEY = 'supersecret'; // Change this for production!
+const users = {}; // In-memory user store: { username: hashedPassword }
 
-const server = http.createServer((req, res) => {
-  // Statische Dateien bereitstellen
-  let filePath = './public' + (req.url === '/' ? '/index.html' : req.url);
-  const extname = String(path.extname(filePath)).toLowerCase();
+const app = express();
 
-  const contentType = {
-    '.html': 'text/html',
-    '.js': 'application/javascript',
-  }[extname] || 'text/plain';
+// Use Express's built-in JSON parser middleware
+app.use(express.json());
 
-  fs.readFile(filePath, (error, content) => {
-    if (error) {
-      res.writeHead(500);
-      res.end('Serverfehler');
-    } else {
-      res.writeHead(200, { 'Content-Type': contentType });
-      res.end(content, 'utf-8');
-    }
-  });
+// Serve static files (HTML, CSS, JS) from 'public' folder
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Register new user
+app.post('/register', (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) return res.status(400).send('Missing username or password');
+  if (users[username]) return res.status(400).send('User exists');
+
+  const hashed = bcrypt.hashSync(password, 8);
+  users[username] = hashed;
+  res.send('Registered!');
 });
 
-server.on('upgrade', (req, socket) => {
-  // Einfache WebSocket-Handshake
-  if (req.headers['upgrade'] !== 'websocket') {
-    socket.end('HTTP/1.1 400 Bad Request');
+// Login existing user
+app.post('/login', (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) return res.status(400).send('Missing username or password');
+
+  const userPass = users[username];
+  if (!userPass || !bcrypt.compareSync(password, userPass))
+    return res.status(400).send('Invalid credentials');
+
+  const token = jwt.sign({ username }, SECRET_KEY, { expiresIn: '1h' });
+  res.json({ token });
+});
+
+// Create HTTP server from Express app
+const server = http.createServer(app);
+
+// Create WebSocket server attached to HTTP server
+const wss = new WebSocket.Server({ server });
+
+// Broadcast helper to send message to all except sender
+function broadcast(message, sender) {
+  wss.clients.forEach(client => {
+    if (client !== sender && client.readyState === WebSocket.OPEN) {
+      client.send(message);
+    }
+  });
+}
+
+// Handle WebSocket connections
+wss.on('connection', (ws, req) => {
+  // Parse token from query string: ws://host?token=xxx
+  const params = new URLSearchParams(req.url.replace('/?', ''));
+  const token = params.get('token');
+
+  try {
+    // Verify token and get username
+    const decoded = jwt.verify(token, SECRET_KEY);
+    ws.username = decoded.username;
+  } catch (err) {
+    // Close connection if invalid token
+    ws.close();
     return;
   }
 
-  const key = req.headers['sec-websocket-key'];
-  const acceptKey = generateAcceptValue(key);
+  broadcast(`[Server]: ${ws.username} joined the chat`, ws);
 
-  const responseHeaders = [
-    'HTTP/1.1 101 Switching Protocols',
-    'Upgrade: websocket',
-    'Connection: Upgrade',
-    `Sec-WebSocket-Accept: ${acceptKey}`,
-  ];
-
-  socket.write(responseHeaders.join('\r\n') + '\r\n\r\n');
-  clients.push(socket);
-
-  socket.on('data', (buffer) => {
-    const message = decodeWebSocketMessage(buffer);
-    if (message) {
-      const encoded = encodeWebSocketMessage(message);
-      for (const client of clients) {
-        if (client !== socket) client.write(encoded);
-      }
-    }
+  ws.on('message', (msg) => {
+    broadcast(`[${ws.username}]: ${msg}`, ws);
   });
 
-  socket.on('end', () => {
-    const index = clients.indexOf(socket);
-    if (index !== -1) clients.splice(index, 1);
+  ws.on('close', () => {
+    broadcast(`[Server]: ${ws.username} left the chat`, ws);
   });
 });
 
-const os = require('os');
-
-server.listen(3000, '0.0.0.0', () => {
-  const interfaces = os.networkInterfaces();
-  const addresses = [];
-
-  for (let iface of Object.values(interfaces)) {
-    for (let info of iface) {
-      if (info.family === 'IPv4' && !info.internal) {
-        addresses.push(info.address);
-      }
-    }
-  }
-
-  console.log('Server läuft auf den folgenden Adressen:');
-  for (let addr of addresses) {
-    console.log(`→ http://${addr}:3000`);
-  }
+// Start server on specified PORT or 3000
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
-
-
-
-
-// --- Hilfsfunktionen für WebSocket ---
-
-function generateAcceptValue(key) {
-  return require('crypto')
-    .createHash('sha1')
-    .update(key + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')
-    .digest('base64');
-}
-
-function decodeWebSocketMessage(buffer) {
-  const secondByte = buffer[1];
-  const length = secondByte & 127;
-  const mask = buffer.slice(2, 6);
-  const data = buffer.slice(6, 6 + length);
-  const unmasked = data.map((byte, i) => byte ^ mask[i % 4]);
-  return Buffer.from(unmasked).toString('utf8');
-}
-
-function encodeWebSocketMessage(str) {
-  const msgBuffer = Buffer.from(str);
-  const len = msgBuffer.length;
-  const buffer = Buffer.alloc(len + 2);
-  buffer[0] = 129;
-  buffer[1] = len;
-  msgBuffer.copy(buffer, 2);
-  return buffer;
-}
