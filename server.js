@@ -4,19 +4,33 @@ const jwt = require('jsonwebtoken');
 const WebSocket = require('ws');
 const http = require('http');
 const path = require('path');
+const fs = require('fs');
 
-const SECRET_KEY = 'supersecret'; // Change this for production!
-const users = {}; // In-memory user store: { username: hashedPassword }
+const SECRET_KEY = 'supersecret'; // Change for production!
+const USERS_FILE = path.join(__dirname, 'users.json');
+
+// Helper: Load users from file
+function loadUsers() {
+  try {
+    const data = fs.readFileSync(USERS_FILE, 'utf-8');
+    return JSON.parse(data);
+  } catch (err) {
+    return {}; // If no file, start empty
+  }
+}
+
+// Helper: Save users to file
+function saveUsers(users) {
+  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+}
+
+let users = loadUsers();
 
 const app = express();
-
-// Use Express's built-in JSON parser middleware
 app.use(express.json());
-
-// Serve static files (HTML, CSS, JS) from 'public' folder
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Register new user
+// Register
 app.post('/register', (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).send('Missing username or password');
@@ -24,10 +38,12 @@ app.post('/register', (req, res) => {
 
   const hashed = bcrypt.hashSync(password, 8);
   users[username] = hashed;
+  saveUsers(users);
+
   res.send('Registered!');
 });
 
-// Login existing user
+// Login
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).send('Missing username or password');
@@ -40,13 +56,10 @@ app.post('/login', (req, res) => {
   res.json({ token });
 });
 
-// Create HTTP server from Express app
+// WebSocket setup
 const server = http.createServer(app);
-
-// Create WebSocket server attached to HTTP server
 const wss = new WebSocket.Server({ server });
 
-// Broadcast helper to send message to all except sender
 function broadcast(message, sender) {
   wss.clients.forEach(client => {
     if (client !== sender && client.readyState === WebSocket.OPEN) {
@@ -55,18 +68,14 @@ function broadcast(message, sender) {
   });
 }
 
-// Handle WebSocket connections
 wss.on('connection', (ws, req) => {
-  // Parse token from query string: ws://host?token=xxx
   const params = new URLSearchParams(req.url.replace('/?', ''));
   const token = params.get('token');
 
   try {
-    // Verify token and get username
     const decoded = jwt.verify(token, SECRET_KEY);
     ws.username = decoded.username;
   } catch (err) {
-    // Close connection if invalid token
     ws.close();
     return;
   }
@@ -82,8 +91,5 @@ wss.on('connection', (ws, req) => {
   });
 });
 
-// Start server on specified PORT or 3000
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

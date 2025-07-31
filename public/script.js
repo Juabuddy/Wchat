@@ -8,13 +8,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const chatSection = document.getElementById('chat-section');
   const loginMessage = document.getElementById('login-message');
 
- function addMessage(text, isUser) {
-  const msg = document.createElement('div');
-  msg.className = 'message ' + (isUser ? 'user' : 'other');
-  msg.textContent = text;
-  chat.appendChild(msg);
-  // ❌ No auto-scrolling
-}
+  function addMessage(text, isUser) {
+    const msg = document.createElement('div');
+    msg.className = 'message ' + (isUser ? 'user' : 'other');
+    msg.textContent = text;
+    chat.appendChild(msg);
+    chat.scrollTop = chat.scrollHeight;
+  }
 
   function send() {
     const text = input.value.trim();
