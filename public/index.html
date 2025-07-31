@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="script.js"></script>
   <title>Chat App</title>
   <style>
     * {
@@ -122,13 +123,9 @@
     <div class="chat-header">💬 Live Chat</div>
     <div class="chat-messages" id="chat"></div>
     <div class="chat-input">
-      <form action="/ziel" method = "POST">
       <input id="input" placeholder="Nachricht eingeben..." autocomplete="off" />
       <button onclick="send()">Senden</button>
-      </form>
     </div>
   </div>
-
-  <script src="script.js"></script>
 </body>
 </html>

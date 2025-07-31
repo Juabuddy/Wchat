@@ -1,4 +1,5 @@
-const ws = new WebSocket('ws://' + location.host);
+const protocol = location.protocol === 'https:' ? 'wss://' : 'ws://';
+const wss = new WebSocket(protocol + location.host);
 const chat = document.getElementById('chat');
 const input = document.getElementById('input');
 
