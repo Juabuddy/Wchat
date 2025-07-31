@@ -135,7 +135,6 @@
       padding: 1rem;
       border-top: 1px solid #ddd;
       background-color: #fff;
-      flex-shrink: 0; /* don't shrink */
     }
 
     .chat-input input {
@@ -190,7 +189,7 @@
       <div id="login-message"></div>
     </section>
 
-    <section id="chat-section">
+    <section id="chat-section" style="display:none">
       <div id="chat"></div>
       <div class="chat-input">
         <input id="input" placeholder="Nachricht eingeben..." autocomplete="off" />
