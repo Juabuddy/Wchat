@@ -9,17 +9,15 @@ const fs = require('fs');
 const SECRET_KEY = 'supersecret'; // Change for production!
 const USERS_FILE = path.join(__dirname, 'users.json');
 
-// Helper: Load users from file
 function loadUsers() {
   try {
     const data = fs.readFileSync(USERS_FILE, 'utf-8');
     return JSON.parse(data);
   } catch (err) {
-    return {}; // If no file, start empty
+    return {};
   }
 }
 
-// Helper: Save users to file
 function saveUsers(users) {
   fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
 }
@@ -30,7 +28,6 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Register
 app.post('/register', (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).send('Missing username or password');
@@ -43,7 +40,6 @@ app.post('/register', (req, res) => {
   res.send('Registered!');
 });
 
-// Login
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).send('Missing username or password');
@@ -56,9 +52,10 @@ app.post('/login', (req, res) => {
   res.json({ token });
 });
 
-// WebSocket setup
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
+
+const onlineUsers = new Set();
 
 function broadcast(message, sender) {
   wss.clients.forEach(client => {
@@ -75,19 +72,23 @@ wss.on('connection', (ws, req) => {
   try {
     const decoded = jwt.verify(token, SECRET_KEY);
     ws.username = decoded.username;
+    onlineUsers.add(ws.username);
+    broadcastOnlineUsers();
   } catch (err) {
     ws.close();
     return;
   }
 
-  broadcast(`[Server]: ${ws.username} joined the chat`, ws);
+  broadcast(JSON.stringify({ type: 'message', text: `[Server]: ${ws.username} joined the chat` }), ws);
 
   ws.on('message', (msg) => {
-    broadcast(`[${ws.username}]: ${msg}`, ws);
+    broadcast(JSON.stringify({ type: 'message', text: `[${ws.username}]: ${msg}` }), ws);
   });
 
   ws.on('close', () => {
-    broadcast(`[Server]: ${ws.username} left the chat`, ws);
+    onlineUsers.delete(ws.username);
+    broadcastOnlineUsers();
+    broadcast(JSON.stringify({ type: 'message', text: `[Server]: ${ws.username} left the chat` }), ws);
   });
 });
 

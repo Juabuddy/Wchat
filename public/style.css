@@ -104,15 +104,20 @@
       flex-shrink: 0;
     }
 
-    .message {
+    .message, .time24h {
       max-width: 80%;
       padding: 10px 15px;
       border-radius: 18px;
       font-size: 1rem;
+      font-weight: bold;
       line-height: 1.4;
       animation: fadeIn 0.3s ease-in-out;
       word-wrap: break-word;
       white-space: pre-wrap;
+    }
+
+    .time24h {
+      font-size: 0.5rem
     }
 
     .message.user {
