@@ -1,2 +1,2 @@
-Wir versuchen eine Nachrichtensystem zu erstellen.
+Wir versuchen ein Nachrichtensystem zu erstellen.
 

@@ -42,6 +42,15 @@ document.addEventListener('DOMContentLoaded', () => {
     loginMessage.textContent = '';
   }
 
+  function updateOnlineUsers(users) {
+    usersList.innerHTML = '';
+    users.forEach(user => {
+      const li = document.createElement('li');
+      li.textContent = user;
+      usersList.appendChild(li);
+    });
+  }
+
   function startChat() {
     loginSection.style.display = 'none';
     chatSection.style.display = 'flex';
