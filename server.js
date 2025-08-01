@@ -1,3 +1,4 @@
+//Defines Veriables/Elements (Mainly to establish web server)
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -6,9 +7,11 @@ const http = require('http');
 const path = require('path');
 const fs = require('fs');
 
-const SECRET_KEY = 'supersecret'; // Change for production!
+//User Data Storage + Encryption
+const SECRET_KEY = 'Hasan123';
 const USERS_FILE = path.join(__dirname, 'users.json');
 
+//Loads User Data from users.json
 function loadUsers() {
   try {
     const data = fs.readFileSync(USERS_FILE, 'utf-8');
@@ -17,13 +20,13 @@ function loadUsers() {
     return {};
   }
 }
-
+//Saves User Data in users.jason
 function saveUsers(users) {
   fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
 }
 
 let users = loadUsers();
-
+//Allows us to establish webserver
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -81,7 +84,7 @@ function broadcastOnlineUsers() {
     }
   });
 }
-
+//Security behind registration. Prevents unauthorized user access
 wss.on('connection', (ws, req) => {
   const params = new URLSearchParams(req.url.replace('/?', ''));
   const token = params.get('token');
@@ -96,7 +99,7 @@ wss.on('connection', (ws, req) => {
     return;
   }
 
-  // Notify others about new user
+  // Notifies others about new user
   broadcast(JSON.stringify({ type: 'message', text: `[Server]: ${ws.username} joined the chat` }), ws);
 
   ws.on('message', (msg) => {
@@ -108,6 +111,6 @@ wss.on('connection', (ws, req) => {
     broadcast(JSON.stringify({ type: 'message', text: `[Server]: ${ws.username} left the chat` }), ws);
   });
 });
-
+//Establishes Port
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

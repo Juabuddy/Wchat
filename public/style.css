@@ -1,7 +1,7 @@
 * {
       box-sizing: border-box;
     }
-
+    /* Main Container */
     body {
       margin: 0;
       padding: 0;
@@ -162,7 +162,7 @@
     .chat-input button:hover {
       background-color: #4338ca;
     }
-    
+/* Background Selector */
 #bg-selector {
   padding: 10px;
   background: #ffffffaa;

@@ -7,11 +7,11 @@
   <link rel="stylesheet" href="style.css">
   
 </head>
-<body>
+<body> 
   <div class="container">
     <div class="header">👑WChat👑</div>
 
-    <section id="login-section">
+    <section id="login-section"> <!-- Login Page -->
       <input id="username" placeholder="Benutzername" autocomplete="off" />
       <input id="password" type="password" placeholder="Passwort" autocomplete="off" />
       <div style="display: flex; justify-content: space-between;">
@@ -21,13 +21,13 @@
       <div id="login-message"></div>
     </section>
 
-  <div id="bg-selector" style="text-align:center; margin: 10px;">
+  <div id="bg-selector" style="text-align:center; margin: 10px;"> <!-- Background Selection-->
     <input type="file" id="bg-input" accept="image/*" />
     <button onclick="applyBackground()">Apply Background</button>
     <button onclick="resetBackground()">Reset Background</button>
   </div>
 
-    <section id="chat-section" style="display:none">
+    <section id="chat-section" style="display:none"> <!--Chat Input Box-->
       <button id="logout-button" onclick="logout()" style="align-self: flex-end; margin: 1rem; padding: 0.5rem 1rem; background-color: #ef4444; color: white; border: none; border-radius: 999px; font-size: 1rem; cursor: pointer;">Logout</button>
       <div id="chat"></div>
       <div class="chat-input">
