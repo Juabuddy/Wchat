@@ -90,7 +90,6 @@ wss.on('connection', (ws, req) => {
     const decoded = jwt.verify(token, SECRET_KEY);
     ws.username = decoded.username;
     onlineUsers.add(ws.username);
-    broadcastOnlineUsers();
   } catch (err) {
     console.log('Invalid or missing token, closing WS connection');
     ws.close();
@@ -106,7 +105,6 @@ wss.on('connection', (ws, req) => {
 
   ws.on('close', () => {
     onlineUsers.delete(ws.username);
-    broadcastOnlineUsers();
     broadcast(JSON.stringify({ type: 'message', text: `[Server]: ${ws.username} left the chat` }), ws);
   });
 });
