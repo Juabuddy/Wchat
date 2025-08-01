@@ -8,18 +8,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const chatSection = document.getElementById('chat-section');
   const loginMessage = document.getElementById('login-message');
   const bgSelector = document.getElementById('bg-selector');
-  const usersList = document.getElementById('users-list');
 
   function addMessage(text, isUser) {
     const msg = document.createElement('div');
-    const timestamp = Date.now();
-    const date = new Date(timestamp);
+    const date = new Date();
     const hours = date.getHours().toString().padStart(2, '0');
     const minutes = date.getMinutes().toString().padStart(2, '0');
     const seconds = date.getSeconds().toString().padStart(2, '0');
-    const time24h = `${hours}:${minutes}:${seconds}`;
     msg.className = 'message ' + (isUser ? 'user' : 'other');
-    msg.textContent = `[${time24h}] ${text}`;
+    msg.textContent = `[${hours}:${minutes}:${seconds}] ${text}`;
     chat.appendChild(msg);
     chat.scrollTop = chat.scrollHeight;
   }
@@ -42,15 +39,6 @@ document.addEventListener('DOMContentLoaded', () => {
     loginMessage.textContent = '';
   }
 
-  function updateOnlineUsers(users) {
-    usersList.innerHTML = '';
-    users.forEach(user => {
-      const li = document.createElement('li');
-      li.textContent = user;
-      usersList.appendChild(li);
-    });
-  }
-
   function startChat() {
     loginSection.style.display = 'none';
     chatSection.style.display = 'flex';
@@ -65,9 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        if (data.type === 'onlineUsers') {
-          updateOnlineUsers(data.users);
-        } else if (data.type === 'message') {
+        if (data.type === 'message') {
           addMessage(data.text, false);
         } else {
           addMessage(event.data, false);
