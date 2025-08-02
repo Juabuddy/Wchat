@@ -30,9 +30,18 @@
     <section id="chat-section" style="display:none"> <!--Chat Input Box-->
       <button id="logout-button" onclick="logout()" style="align-self: flex-end; margin: 1rem; padding: 0.5rem 1rem; background-color: #ef4444; color: white; border: none; border-radius: 999px; font-size: 1rem; cursor: pointer;">Logout</button>
       <div id="chat"></div>
-      <div class="chat-input">
-      <input id="input" placeholder="Nachricht eingeben..." autocomplete="off" />
-      <button onclick="send()">Senden</button>
+      <div class="chat-input" style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; gap: 8px;">
+          <input id="input" placeholder="Nachricht eingeben..." autocomplete="off" style="flex:1;" />
+          <button onclick="send()">Senden</button>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <input type="file" id="image-upload" accept="image/*" />
+          <button onclick="uploadImage()">Bild senden</button>
+          <input type="file" id="audio-upload" accept="audio/*" />
+          <button onclick="uploadAudio()">Audio senden</button>
+          <button id="record-audio-btn" onclick="toggleRecording()">🎤 Aufnahme starten</button>
+        </div>
       </div>
     </section>
   </div>
