@@ -6,10 +6,21 @@ const WebSocket = require('ws');
 const http = require('http');
 const path = require('path');
 const fs = require('fs');
+const sqlite3 = require('sqlite3').verbose();
 
 //User Data Storage + Encryption
 const SECRET_KEY = 'Hasan123';
 const USERS_FILE = path.join(__dirname, 'users.json');
+const DB_FILE = path.join(__dirname, 'users.db');
+
+// Initialize SQLite database
+const db = new sqlite3.Database(DB_FILE, (err) => {
+  if (err) throw err;
+  db.run(
+    'CREATE TABLE IF NOT EXISTS users (username TEXT PRIMARY KEY, password TEXT NOT NULL)',
+    (err) => { if (err) throw err; }
+  );
+});
 
 //Loads User Data from users.json
 function loadUsers() {
@@ -35,26 +46,28 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.post('/register', (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).send('Missing username or password');
-  if (users[username]) return res.status(400).send('User exists');
-
-  const hashed = bcrypt.hashSync(password, 8);
-  users[username] = hashed;
-  saveUsers(users);
-
-  res.send('Registered!');
+  db.get('SELECT username FROM users WHERE username = ?', [username], (err, row) => {
+    if (err) return res.status(500).send('Database error');
+    if (row) return res.status(400).send('User exists');
+    const hashed = bcrypt.hashSync(password, 8);
+    db.run('INSERT INTO users (username, password) VALUES (?, ?)', [username, hashed], (err) => {
+      if (err) return res.status(500).send('Database error');
+      res.send('Registered!');
+    });
+  });
 });
 
 // Login endpoint
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).send('Missing username or password');
-
-  const userPass = users[username];
-  if (!userPass || !bcrypt.compareSync(password, userPass))
-    return res.status(400).send('Invalid credentials');
-
-  const token = jwt.sign({ username }, SECRET_KEY, { expiresIn: '1h' });
-  res.json({ token });
+  db.get('SELECT password FROM users WHERE username = ?', [username], (err, row) => {
+    if (err) return res.status(500).send('Database error');
+    if (!row || !bcrypt.compareSync(password, row.password))
+      return res.status(400).send('Invalid credentials');
+    const token = jwt.sign({ username }, SECRET_KEY, { expiresIn: '1h' });
+    res.json({ token });
+  });
 });
 
 const server = http.createServer(app);
