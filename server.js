@@ -7,6 +7,7 @@ const http = require('http');
 const path = require('path');
 const fs = require('fs');
 const sqlite3 = require('sqlite3').verbose();
+const multer = require('multer');
 
 //User Data Storage + Encryption
 const SECRET_KEY = 'Hasan123';
@@ -42,6 +43,22 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Set up storage for uploads
+const uploadDir = path.join(__dirname, 'public', 'uploads');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const base = path.basename(file.originalname, ext);
+    cb(null, base + '-' + Date.now() + ext);
+  }
+});
+const upload = multer({ storage });
+
+// Serve uploads statically
+app.use('/uploads', express.static(uploadDir));
+
 // Register endpoint
 app.post('/register', (req, res) => {
   const { username, password } = req.body;
@@ -70,6 +87,39 @@ app.post('/login', (req, res) => {
   });
 });
 
+// Image upload endpoint
+app.post('/upload/image', upload.single('image'), (req, res) => {
+  if (!req.file) return res.status(400).send('No file uploaded');
+  const url = `/uploads/${req.file.filename}`;
+  res.json({ url });
+});
+// Audio upload endpoint
+app.post('/upload/audio', upload.single('audio'), (req, res) => {
+  if (!req.file) return res.status(400).send('No file uploaded');
+  const url = `/uploads/${req.file.filename}`;
+  res.json({ url });
+});
+
+// Add profile picture upload endpoint
+app.post('/upload/profile-pic', upload.single('profilePic'), (req, res) => {
+  const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
+  if (!token) return res.status(401).send('No token');
+  let username;
+  try {
+    const decoded = jwt.verify(token, SECRET_KEY);
+    username = decoded.username;
+  } catch {
+    return res.status(401).send('Invalid token');
+  }
+  if (!req.file) return res.status(400).send('No file uploaded');
+  const url = `/uploads/${req.file.filename}`;
+  // Save profilePic URL to users.json
+  users[username] = users[username] || {};
+  users[username].profilePic = url;
+  saveUsers(users);
+  res.json({ url });
+});
+
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
@@ -86,11 +136,15 @@ function broadcast(message, sender) {
 
 // Send updated online users to everyone
 function broadcastOnlineUsers() {
+  // Send profilePic for each user
+  const userList = Array.from(onlineUsers).map(u => ({
+    username: u,
+    profilePic: (users[u] && users[u].profilePic) ? users[u].profilePic : null
+  }));
   const payload = JSON.stringify({
     type: 'onlineUsers',
-    users: Array.from(onlineUsers),
+    users: userList
   });
-
   wss.clients.forEach(client => {
     if (client.readyState === WebSocket.OPEN) {
       client.send(payload);
@@ -105,7 +159,10 @@ wss.on('connection', (ws, req) => {
   try {
     const decoded = jwt.verify(token, SECRET_KEY);
     ws.username = decoded.username;
+    // Attach profilePic to ws
+    ws.profilePic = (users[ws.username] && users[ws.username].profilePic) ? users[ws.username].profilePic : null;
     onlineUsers.add(ws.username);
+    broadcastOnlineUsers(); // <--- Add this line to broadcast on join
   } catch (err) {
     console.log('Invalid or missing token, closing WS connection');
     ws.close();
@@ -113,15 +170,36 @@ wss.on('connection', (ws, req) => {
   }
 
   // Notifies others about new user
-  broadcast(JSON.stringify({ type: 'message', text: `[Server]: ${ws.username} joined the chat` }), ws);
+  broadcast(JSON.stringify({ type: 'message', text: `[Server]: ${ws.username} joined the chat`, username: 'Server' }), ws);
 
+  // In the WebSocket 'message' handler, support file messages (handled on frontend by sending a JSON string with type and url/text)
   ws.on('message', (msg) => {
-    broadcast(JSON.stringify({ type: 'message', text: `[${ws.username}]: ${msg}` }), ws);
+    let data;
+    try {
+      data = JSON.parse(msg);
+    } catch {
+      // fallback to text message
+      data = { type: 'text', text: msg };
+    }
+    if (data.type === 'typing' || data.type === 'stopTyping') {
+      // Broadcast typing events to all except sender
+      wss.clients.forEach(client => {
+        if (client !== ws && client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({ type: data.type, username: ws.username }));
+        }
+      });
+    } else if (data.type === 'image' || data.type === 'audio') {
+      broadcast(JSON.stringify({ type: data.type, url: data.url, username: ws.username }), ws);
+    } else if (data.type === 'text') {
+      broadcast(JSON.stringify({ type: 'message', text: `[${ws.username}]: ${data.text || msg}`, username: ws.username }), ws);
+    }
+    // Do not broadcast anything else
   });
 
   ws.on('close', () => {
     onlineUsers.delete(ws.username);
-    broadcast(JSON.stringify({ type: 'message', text: `[Server]: ${ws.username} left the chat` }), ws);
+    broadcast(JSON.stringify({ type: 'message', text: `[Server]: ${ws.username} left the chat`, username: 'Server' }), ws);
+    broadcastOnlineUsers(); // <--- Add this line to broadcast on leave
   });
 });
 //Establishes Port

@@ -27,18 +27,25 @@
     <button onclick="resetBackground()">Reset Background</button>
   </div>
 
-    <section id="chat-section" style="display:none"> <!--Chat Input Box-->
-      <button id="logout-button" onclick="logout()" style="align-self: flex-end; margin: 1rem; padding: 0.5rem 1rem; background-color: #ef4444; color: white; border: none; border-radius: 999px; font-size: 1rem; cursor: pointer;">Logout</button>
+    <section id="chat-section" style="display:none; position:relative;"> <!--Chat Input Box-->
+      <div style="display: flex; flex-direction: row; justify-content: space-between; align-items: center;">
+        <button id="online-users-btn" style="align-self: flex-start; margin: 1rem; padding: 0.5rem 1rem; background-color: #4f46e5; color: white; border: none; border-radius: 999px; font-size: 1rem; cursor: pointer;">Online</button>
+        <button id="logout-button" onclick="logout()" style="align-self: flex-end; margin: 1rem; padding: 0.5rem 1rem; background-color: #ef4444; color: white; border: none; border-radius: 999px; font-size: 1rem; cursor: pointer;">Logout</button>
+      </div>
+      <div id="online-users-list" style="display:none; position:absolute; top:80px; left:20px; background:white; border:1px solid #ccc; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.1); padding:1rem; z-index:1000; min-width:150px;"></div>
       <div id="chat"></div>
+      <div id="typing-indicator" class="typing-indicator"></div>
       <div class="chat-input" style="display: flex; flex-direction: column; gap: 8px;">
         <div style="display: flex; gap: 8px;">
           <input id="input" placeholder="Nachricht eingeben..." autocomplete="off" style="flex:1;" />
           <button onclick="send()">Senden</button>
         </div>
-        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <input type="file" id="image-upload" accept="image/*" />
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+          <input type="file" id="image-upload" accept="image/*" style="display:none;" />
+          <label for="image-upload" class="upload-label" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;"><span style="font-size:1.2em;">📷</span> Bild wählen</label>
           <button onclick="uploadImage()">Bild senden</button>
-          <input type="file" id="audio-upload" accept="audio/*" />
+          <input type="file" id="audio-upload" accept="audio/*" style="display:none;" />
+          <label for="audio-upload" class="upload-label" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;"><span style="font-size:1.2em;">🎵</span> Audio wählen</label>
           <button onclick="uploadAudio()">Audio senden</button>
           <button id="record-audio-btn" onclick="toggleRecording()">🎤 Aufnahme starten</button>
         </div>
